@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { actions } from './reducer';
 import { Provider, createClient, useQuery } from 'urql';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import Chip from '../../components/Chip';
 import { IState } from '../../store';
 import { Card, CardContent } from '@material-ui/core';
 import MetricSelector from '../../components/MetricSelector';
@@ -54,11 +53,14 @@ const Metric = () => {
 
   if (fetching) return <LinearProgress />;
 
+  const handleChildClick = (childData: any) => {
+    console.log(childData);
+  }
+
   return (
     <Card>
       <CardContent>
-        <Chip label={`Metrics ${metrics}`} />
-        <MetricSelector metrics={metrics}/>
+        <MetricSelector metrics={metrics} onClick={(e: any) => handleChildClick(e)}/>
       </CardContent>
     </Card>
   )
