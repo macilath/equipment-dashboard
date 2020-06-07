@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { actions } from './reducer';
+import { actions, Metric } from './reducer';
 import { Provider, createClient, useQuery } from 'urql';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { IState } from '../../store';
@@ -14,28 +14,50 @@ const client = createClient({
 const query = `
 query {
   getMetrics
+  heartBeat
 }
 `;
 
-const getMetrics = (state: IState) => {
-  const { metrics } = state.metric;
+const subscription = `
+subscription onDataUpdate {
+  newMeasurement {
+    metric
+    unit
+    at
+    value
+  }
+}
+`
+
+const getAvailableMetrics = (state: IState) => {
+  const { availableMetrics } = state.metric;
+  let x = availableMetrics.map((met: any) => {
+    // We really want to load selected state from somewhere else.
+    const metric: Metric = {
+      name: met,
+      liveSelected: false,
+      historicalValues: [],
+      lastSeen: '0'
+    }; return metric;})
+    console.log('metric datas', x);
   return {
-    metrics
+    ...state,
+    availableMetrics
   };
 };
 
 export default () => {
   return (
     <Provider value={client}>
-      <Metric />
+      <MetricsContainer />
     </Provider>
   );
 };
 
 // This is our smart component
-const Metric = () => {
+const MetricsContainer = () => {
   const dispatch = useDispatch();
-  const { metrics } = useSelector(getMetrics);
+  const { weather, availableMetrics } = useSelector(getAvailableMetrics);
 
   const [result] = useQuery({
     query
@@ -47,20 +69,21 @@ const Metric = () => {
       return;
     }
     if (!data) return;
-    const { getMetrics } = data;
-    dispatch(actions.metricDataReceived(getMetrics));
+    const { getMetrics, heartBeat } = data;
+    dispatch(actions.allMetricsReceived(getMetrics));
   }, [dispatch, data, error]);
 
   if (fetching) return <LinearProgress />;
 
   const handleChildClick = (childData: any) => {
-    console.log(childData);
+    // We're going to toggle the selected state for the one clicked
+    console.log('inop');
   }
 
   return (
     <Card>
       <CardContent>
-        <MetricSelector metrics={metrics} onClick={(e: any) => handleChildClick(e)}/>
+        <MetricSelector metrics={availableMetrics} onClick={(e: any) => handleChildClick(e)}/>
       </CardContent>
     </Card>
   )
