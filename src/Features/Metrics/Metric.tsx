@@ -1,66 +1,122 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { actions } from './reducer';
-import { Provider, createClient, useQuery } from 'urql';
+import { actions, Metric } from './reducer';
+import { Provider, createClient, useQuery, useSubscription, dedupExchange, fetchExchange, subscriptionExchange } from 'urql';
+import { SubscriptionClient } from 'subscriptions-transport-ws';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { IState } from '../../store';
 import { Card, CardContent } from '@material-ui/core';
 import MetricSelector from '../../components/MetricSelector';
+import ChartingContainer from '../../components/ChartingContainer';
 
+const websocketClient = new SubscriptionClient(
+  'wss://react.eogresources.com/graphql',
+  {
+    reconnect: true,
+    reconnectionAttempts: 10
+  }
+);
+
+// Wired up it works, but need to fix useeffect because we keep mutating getMetrics state too.
 const client = createClient({
   url: 'https://react.eogresources.com/graphql',
+  exchanges: [
+    dedupExchange,
+    fetchExchange,
+    subscriptionExchange({
+      forwardSubscription: operation => websocketClient.request(operation)
+    })
+  ]
 });
 
 const query = `
 query {
   getMetrics
+  heartBeat
 }
 `;
 
-const getMetrics = (state: IState) => {
-  const { metrics } = state.metric;
+// Risk of being a bit heavy, we should try to filter subscription contents
+const subscription = `
+subscription onDataUpdate {
+  newMeasurement {
+    metric
+    unit
+    at
+    value
+  }
+}
+`;
+
+const getAvailableMetrics = (state: IState) => {
+  const { availableMetrics } = state.metric;
   return {
-    metrics
+    ...state,
+    availableMetrics
   };
 };
+
+const getSelectedMetrics = (state: IState) => {
+  const actives = state.metric.availableMetrics.filter((x: Metric) => x.liveSelected);
+  return {
+    ...state,
+    actives
+  }
+}
 
 export default () => {
   return (
     <Provider value={client}>
-      <Metric />
+      <MetricsContainer />
     </Provider>
   );
 };
 
-// This is our smart component
-const Metric = () => {
+const MetricsContainer = () => {
   const dispatch = useDispatch();
-  const { metrics } = useSelector(getMetrics);
+  const { weather, availableMetrics } = useSelector(getAvailableMetrics);
+  const { actives } = useSelector(getSelectedMetrics);
 
   const [result] = useQuery({
     query
   });
   const { fetching, data, error } = result;
-  useEffect(() => {
+  const [sub] = useSubscription({query: subscription})
+  const { fetching: subFetch, data: subData, error: subErr } = sub;
+  useEffect(() => { // hit each render. Heavy, should try and split the resource consumption
     if (error) {
       dispatch(actions.metricApiErrorReceived({ error: error.message }));
       return;
     }
-    if (!data) return;
-    const { getMetrics } = data;
-    dispatch(actions.metricDataReceived(getMetrics));
-  }, [dispatch, data, error]);
+    if (!data && !subData) return;
+    if (data && availableMetrics.length === 0) { //short-circuit if we've got metrics
+      const { getMetrics, heartBeat } = data;
+      dispatch(actions.allMetricsReceived(getMetrics));
+    }
+    if (subErr) {
+      dispatch(actions.streamApiErrorReceived({error: subErr.message}));
+      return;
+    }
+    if (subData) {
+      const measurement = subData.newMeasurement;
+      dispatch(actions.newMeasurementReceived(measurement));
+    }
+  }, [dispatch, data, subData, error, subErr, availableMetrics.length]);
 
   if (fetching) return <LinearProgress />;
 
   const handleChildClick = (childData: any) => {
-    console.log(childData);
+    // We're going to toggle the selected state for the one clicked
+    let updated = {...childData}; // Copy from memory
+    updated.liveSelected = !updated.liveSelected;
+    dispatch(actions.updateSelectedMetrics(updated));
   }
 
   return (
     <Card>
       <CardContent>
-        <MetricSelector metrics={metrics} onClick={(e: any) => handleChildClick(e)}/>
+        <MetricSelector metrics={availableMetrics} onClick={(e: any) => handleChildClick(e)}/>
+        <ChartingContainer actives={actives} metrics={availableMetrics} />
       </CardContent>
     </Card>
   )

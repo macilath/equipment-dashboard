@@ -1,6 +1,6 @@
 import React from 'react';
 import { makeStyles } from '@material-ui/core/styles';
-import Metric from '../Features/Metrics/Metric';
+import MetricsContainer from '../Features/Metrics/Metric';
 import { Container } from '@material-ui/core';
 
 const useStyles = makeStyles({
@@ -13,7 +13,7 @@ export default () => {
   const classes = useStyles();
   return (
     <Container>
-      <Metric />
+      <MetricsContainer />
     </Container>
   );
 };

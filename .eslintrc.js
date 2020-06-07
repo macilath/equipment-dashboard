@@ -3,7 +3,6 @@ module.exports = {
     browser: true,
     es6: true,
     commonjs: true,
-    es6: true,
     node: true,
   },
   parser: '@typescript-eslint/parser', // Specifies the ESLint parser
@@ -22,9 +21,11 @@ module.exports = {
     ecmaVersion: 2018,
     sourceType: 'module',
   },
-  plugins: ['react'],
+  plugins: ['react', 'react-hooks'],
   rules: {
     quotes: ['error', 'double'],
     '@typescript-eslint/no-angle-bracket-type-assertion': 'off',
+    'react-hooks/rules-of-hooks': 'warn',
+    'react-hooks/exhaustive-deps': 'warn'
   },
 };

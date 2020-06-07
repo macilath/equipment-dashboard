@@ -1,11 +1,7 @@
 import { ListItem, List, Switch } from "@material-ui/core"
 import React from "react"
 import { CSSProperties } from "@material-ui/core/styles/withStyles";
-
-interface MetricSelectorProps {
-    metrics: string[]
-    onClick: any
-}
+import { Metric } from "../Features/Metrics/reducer";
 
 const styleHorizontalContainer: CSSProperties = {
     'display': 'flex',
@@ -15,20 +11,17 @@ const styleHorizontalContainer: CSSProperties = {
 
 
 // Given a list of metrics (props), provide ability to select none/one/many and emit selected value
-class MetricSelector extends React.Component <MetricSelectorProps> {
-
-    render() {
-        return (
-            <List style={styleHorizontalContainer}>
-                {this.props.metrics.map((metric) => (
-                    <ListItem key={this.props.metrics.indexOf(metric)} onClick={e => this.props.onClick(metric)}>
-                         <Switch checked={false} name={metric} />
-                         {metric}
-                    </ListItem>
-                ))}
-            </List>
-        )
-    }
+const MetricSelector = (props: any) => {
+    return (
+        <List style={styleHorizontalContainer}>
+            {props.metrics.map((metric: Metric) => (
+                <ListItem key={props.metrics.indexOf(metric)} onClick={e => props.onClick(metric)}>
+                        <Switch checked={metric.liveSelected} name={metric.name} />
+                        {metric.name}
+                </ListItem>
+            ))}
+        </List>
+    )
 }
 
 export default MetricSelector
