@@ -1,14 +1,32 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions, Metric } from './reducer';
-import { Provider, createClient, useQuery } from 'urql';
+import { Provider, createClient, useQuery, useSubscription, dedupExchange, fetchExchange, subscriptionExchange } from 'urql';
+import { SubscriptionClient } from 'subscriptions-transport-ws';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { IState } from '../../store';
 import { Card, CardContent } from '@material-ui/core';
 import MetricSelector from '../../components/MetricSelector';
+import ChartingContainer from '../../components/ChartingContainer';
 
+const websocketClient = new SubscriptionClient(
+  'wss://react.eogresources.com/graphql',
+  {
+    reconnect: true,
+    reconnectionAttempts: 10
+  }
+);
+
+// Wired up it works, but need to fix useeffect because we keep mutating getMetrics state too.
 const client = createClient({
   url: 'https://react.eogresources.com/graphql',
+  exchanges: [
+    dedupExchange,
+    fetchExchange,
+    subscriptionExchange({
+      forwardSubscription: operation => websocketClient.request(operation)
+    })
+  ]
 });
 
 const query = `
@@ -18,6 +36,7 @@ query {
 }
 `;
 
+// Risk of being a bit heavy, we should try to filter subscription contents
 const subscription = `
 subscription onDataUpdate {
   newMeasurement {
@@ -27,7 +46,7 @@ subscription onDataUpdate {
     value
   }
 }
-`
+`;
 
 const getAvailableMetrics = (state: IState) => {
   const { availableMetrics } = state.metric;
@@ -53,7 +72,6 @@ export default () => {
   );
 };
 
-// This is our smart component
 const MetricsContainer = () => {
   const dispatch = useDispatch();
   const { weather, availableMetrics } = useSelector(getAvailableMetrics);
@@ -63,15 +81,27 @@ const MetricsContainer = () => {
     query
   });
   const { fetching, data, error } = result;
-  useEffect(() => {
+  const [sub] = useSubscription({query: subscription})
+  const { fetching: subFetch, data: subData, error: subErr } = sub;
+  useEffect(() => { // hit each render. Heavy, should try and split the resource consumption
     if (error) {
       dispatch(actions.metricApiErrorReceived({ error: error.message }));
       return;
     }
-    if (!data) return;
-    const { getMetrics, heartBeat } = data;
-    dispatch(actions.allMetricsReceived(getMetrics));
-  }, [dispatch, data, error]);
+    if (!data && !subData) return;
+    if (data && availableMetrics.length === 0) { //short-circuit if we've got metrics
+      const { getMetrics, heartBeat } = data;
+      dispatch(actions.allMetricsReceived(getMetrics));
+    }
+    if (subErr) {
+      dispatch(actions.streamApiErrorReceived({error: subErr.message}));
+      return;
+    }
+    if (subData) {
+      const measurement = subData.newMeasurement;
+      dispatch(actions.newMeasurementReceived(measurement));
+    }
+  }, [dispatch, data, subData, error, subErr, availableMetrics.length]);
 
   if (fetching) return <LinearProgress />;
 
@@ -86,6 +116,7 @@ const MetricsContainer = () => {
     <Card>
       <CardContent>
         <MetricSelector metrics={availableMetrics} onClick={(e: any) => handleChildClick(e)}/>
+        <ChartingContainer actives={actives} metrics={availableMetrics} />
       </CardContent>
     </Card>
   )

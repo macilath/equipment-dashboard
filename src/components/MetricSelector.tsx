@@ -3,11 +3,6 @@ import React from "react"
 import { CSSProperties } from "@material-ui/core/styles/withStyles";
 import { Metric } from "../Features/Metrics/reducer";
 
-interface MetricSelectorProps {
-    metrics: [] | any
-    onClick: any
-}
-
 const styleHorizontalContainer: CSSProperties = {
     'display': 'flex',
     'flexDirection': 'row',
@@ -17,7 +12,6 @@ const styleHorizontalContainer: CSSProperties = {
 
 // Given a list of metrics (props), provide ability to select none/one/many and emit selected value
 const MetricSelector = (props: any) => {
-    console.log('props', props);
     return (
         <List style={styleHorizontalContainer}>
             {props.metrics.map((metric: Metric) => (
