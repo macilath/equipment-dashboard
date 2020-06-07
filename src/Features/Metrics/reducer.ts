@@ -8,7 +8,7 @@ export type Metric = {
 }
 
 export type Metrics = {
-  availableMetrics: string[]
+  availableMetrics: Metric[]
 };
 
 export type ApiErrorAction = {
@@ -25,9 +25,25 @@ const slice = createSlice({
   reducers: {
     allMetricsReceived: (state, action: PayloadAction<any>) => {
       const availableMetrics = action.payload;
-      state.availableMetrics = availableMetrics;
+      // "Pure" in that it always sets the state to blank?
+      const metrics = availableMetrics.map((name: any) => {
+        const metric: Metric = {
+          name,
+          liveSelected: false,
+          historicalValues: [],
+          lastSeen: '0'
+        }; return metric;
+      });
+      state.availableMetrics = metrics;
     },
     metricApiErrorReceived: (state, action: PayloadAction<ApiErrorAction>) => state,
+    updateSelectedMetrics: (state, action: PayloadAction<Metric>) => {
+      const metricToUpdate = action.payload;
+      const allMetrics = state.availableMetrics;
+      const idx = allMetrics.findIndex((metric: Metric) => metric.name === metricToUpdate.name);
+      allMetrics[idx] = metricToUpdate;
+      state.availableMetrics = allMetrics;
+    },
   }
 });
 

@@ -31,20 +31,19 @@ subscription onDataUpdate {
 
 const getAvailableMetrics = (state: IState) => {
   const { availableMetrics } = state.metric;
-  let x = availableMetrics.map((met: any) => {
-    // We really want to load selected state from somewhere else.
-    const metric: Metric = {
-      name: met,
-      liveSelected: false,
-      historicalValues: [],
-      lastSeen: '0'
-    }; return metric;})
-    console.log('metric datas', x);
   return {
     ...state,
     availableMetrics
   };
 };
+
+const getSelectedMetrics = (state: IState) => {
+  const actives = state.metric.availableMetrics.filter((x: Metric) => x.liveSelected);
+  return {
+    ...state,
+    actives
+  }
+}
 
 export default () => {
   return (
@@ -58,6 +57,7 @@ export default () => {
 const MetricsContainer = () => {
   const dispatch = useDispatch();
   const { weather, availableMetrics } = useSelector(getAvailableMetrics);
+  const { actives } = useSelector(getSelectedMetrics);
 
   const [result] = useQuery({
     query
@@ -77,7 +77,9 @@ const MetricsContainer = () => {
 
   const handleChildClick = (childData: any) => {
     // We're going to toggle the selected state for the one clicked
-    console.log('inop');
+    let updated = {...childData}; // Copy from memory
+    updated.liveSelected = !updated.liveSelected;
+    dispatch(actions.updateSelectedMetrics(updated));
   }
 
   return (

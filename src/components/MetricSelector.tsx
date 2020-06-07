@@ -1,6 +1,7 @@
 import { ListItem, List, Switch } from "@material-ui/core"
 import React from "react"
 import { CSSProperties } from "@material-ui/core/styles/withStyles";
+import { Metric } from "../Features/Metrics/reducer";
 
 interface MetricSelectorProps {
     metrics: [] | any
@@ -19,10 +20,10 @@ const MetricSelector = (props: any) => {
     console.log('props', props);
     return (
         <List style={styleHorizontalContainer}>
-            {props.metrics.map((metric: string) => (
+            {props.metrics.map((metric: Metric) => (
                 <ListItem key={props.metrics.indexOf(metric)} onClick={e => props.onClick(metric)}>
-                        <Switch checked={false} name={metric} />
-                        {metric}
+                        <Switch checked={metric.liveSelected} name={metric.name} />
+                        {metric.name}
                 </ListItem>
             ))}
         </List>
