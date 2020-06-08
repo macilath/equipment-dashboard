@@ -32,10 +32,12 @@ const initialState = {
   availableMetrics: [] as any, // workaround issue with empty array being declared never[] - come back
 };
 
-const _expireMeasurements = () => {
+const _expireMeasurements = (measurements: ValueTuple[]) => {
   // if this isn't fast we're gonna have a bad time
-  // Since it's a state mutation we need to trigger with dispatch
-  console.log('remove historical measurements...');
+  let updated = measurements;
+  const comparisonTimestamp = new Date().getTime();
+  const windowSize = 30 * 60 * 1000;
+  return updated.filter(entry => new Date(entry.at).getTime() >= (comparisonTimestamp - windowSize));
 };
 
 const slice = createSlice({
@@ -74,14 +76,19 @@ const slice = createSlice({
       const idx = allMetrics.findIndex((metric: Metric) => metric.name === newMeasurement.metric);
       let metricToUpdate = allMetrics[idx];
       const val: ValueTuple = { value: newMeasurement.value, at: newMeasurement.at };
-      metricToUpdate.historicalValues.push(val);
-      metricToUpdate.lastSeen = newMeasurement.at;
-      if (metricToUpdate.unit === '') {
-        metricToUpdate.unit = newMeasurement.unit;
-      } // changing units? bigger problems
-      allMetrics[idx] = metricToUpdate;
-      state.availableMetrics = allMetrics;
-      // We update the state, and the child component will graph only those selected
+      // possible race condition here if we haven't loaded metrics yet?
+      if (metricToUpdate.historicalValues) {
+        metricToUpdate.historicalValues.push(val);
+        // Trim expired measurements
+        metricToUpdate.historicalValues = _expireMeasurements(metricToUpdate.historicalValues);
+        metricToUpdate.lastSeen = newMeasurement.at;
+        if (metricToUpdate.unit === '') {
+          metricToUpdate.unit = newMeasurement.unit;
+        } // changing units? bigger problems
+        allMetrics[idx] = metricToUpdate;
+        state.availableMetrics = allMetrics;
+        // We update the state, and the child component will graph only those selected
+      }
     },
   },
 });
