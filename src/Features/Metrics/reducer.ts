@@ -10,6 +10,7 @@ export type Metric = {
   historicalValues: ValueTuple[]
   lastSeen: string // timestamp of last value
   liveSelected: boolean
+  unit: string
 }
 
 export type Metrics = {
@@ -49,16 +50,17 @@ const slice = createSlice({
           name,
           liveSelected: false,
           historicalValues: [],
-          lastSeen: '0'
+          lastSeen: '0',
+          unit: ''
         }; return metric;
       });
       state.availableMetrics = metrics;
     },
     metricApiErrorReceived: (state, action: PayloadAction<ApiErrorAction>) => state,
     streamApiErrorReceived: (state, action: PayloadAction<ApiErrorAction>) => state,
-    updateSelectedMetrics: (state, action: PayloadAction<Metric>) => {
+    updateSelectedMetric: (state, action: PayloadAction<Metric>) => {
       const metricToUpdate = action.payload;
-      const allMetrics = state.availableMetrics;
+      const allMetrics: Metric[] = state.availableMetrics;
       const idx = allMetrics.findIndex((metric: Metric) => metric.name === metricToUpdate.name);
       allMetrics[idx] = metricToUpdate;
       state.availableMetrics = allMetrics;
@@ -72,6 +74,8 @@ const slice = createSlice({
       let metricToUpdate = allMetrics[idx];
       const val: ValueTuple = { value: newMeasurement.value, at: newMeasurement.at }
       metricToUpdate.historicalValues.push(val);
+      metricToUpdate.lastSeen = newMeasurement.at;
+      if (metricToUpdate.unit === '') { metricToUpdate.unit = newMeasurement.unit; } // changing units? bigger problems
       allMetrics[idx] = metricToUpdate;
       state.availableMetrics = allMetrics;
       // We update the state, and the child component will graph only those selected

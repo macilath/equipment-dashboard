@@ -8,7 +8,9 @@ import { IState } from '../../store';
 import { Card, CardContent } from '@material-ui/core';
 import MetricSelector from '../../components/MetricSelector';
 import ChartingContainer from '../../components/ChartingContainer';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
+// Would be nice to configure backoff, too
 const websocketClient = new SubscriptionClient(
   'wss://react.eogresources.com/graphql',
   {
@@ -109,14 +111,16 @@ const MetricsContainer = () => {
     // We're going to toggle the selected state for the one clicked
     let updated = {...childData}; // Copy from memory
     updated.liveSelected = !updated.liveSelected;
-    dispatch(actions.updateSelectedMetrics(updated));
+    dispatch(actions.updateSelectedMetric(updated));
   }
 
   return (
-    <Card>
+    <Card style={{width: '100vw'}}>
       <CardContent>
-        <MetricSelector metrics={availableMetrics} onClick={(e: any) => handleChildClick(e)}/>
-        <ChartingContainer actives={actives} metrics={availableMetrics} />
+        <ErrorBoundary name='parentcomponent'>
+          <MetricSelector metrics={availableMetrics} onClick={(e: any) => handleChildClick(e)}/>
+          <ChartingContainer actives={actives} metrics={availableMetrics} />
+        </ErrorBoundary>
       </CardContent>
     </Card>
   )
