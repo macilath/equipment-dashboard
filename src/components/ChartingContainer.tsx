@@ -17,8 +17,8 @@ const ChartingContainer = (props: any) => {
       <Grid container direction="row" justify="flex-start" alignItems="center" spacing={3}>
         {props.actives.map((activeMetric: Metric) => (
           <Grid item key={props.metrics.indexOf(activeMetric) || -1}>
-            {activeMetric.name.toLocaleUpperCase()} :{' '}
-            {activeMetric.historicalValues[activeMetric.historicalValues.length - 1].value || -1} {activeMetric.unit}
+            {activeMetric.name.toLocaleUpperCase()}:{' '}
+            {activeMetric.historicalValues.length >= 1 ? activeMetric.historicalValues[activeMetric.historicalValues.length - 1].value : -1} {activeMetric.unit}
             <LineChart
               width={400}
               height={400}

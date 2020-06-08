@@ -97,7 +97,7 @@ const MetricsContainer = () => {
     }
     if (!data && !subData) return;
     if (data && availableMetrics.length === 0) {
-      //short-circuit if we've got metrics
+      //only update state if we don't have metrics
       const { getMetrics } = data;
       dispatch(actions.allMetricsReceived(getMetrics));
     }
