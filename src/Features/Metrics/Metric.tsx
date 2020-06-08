@@ -39,7 +39,6 @@ const client = createClient({
 const query = `
 query {
   getMetrics
-  heartBeat
 }
 `;
 
@@ -81,7 +80,7 @@ export default () => {
 
 const MetricsContainer = () => {
   const dispatch = useDispatch();
-  const { weather, availableMetrics } = useSelector(getAvailableMetrics);
+  const { availableMetrics } = useSelector(getAvailableMetrics);
   const { actives } = useSelector(getSelectedMetrics);
 
   const [result] = useQuery({
@@ -99,7 +98,7 @@ const MetricsContainer = () => {
     if (!data && !subData) return;
     if (data && availableMetrics.length === 0) {
       //short-circuit if we've got metrics
-      const { getMetrics, heartBeat } = data;
+      const { getMetrics } = data;
       dispatch(actions.allMetricsReceived(getMetrics));
     }
     if (subErr) {
@@ -112,7 +111,7 @@ const MetricsContainer = () => {
     }
   }, [dispatch, data, subData, error, subErr, availableMetrics.length]);
 
-  if (fetching) return <LinearProgress />;
+  if (fetching && subFetch) return <LinearProgress />;
 
   const handleChildClick = (childData: any) => {
     // We're going to toggle the selected state for the one clicked

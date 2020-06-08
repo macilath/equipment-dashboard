@@ -16,7 +16,7 @@ const MetricSelector = (props: any) => {
       {props.metrics.map((metric: Metric) => (
         <ListItem key={props.metrics.indexOf(metric)} onClick={(e) => props.onClick(metric)}>
           <Switch checked={metric.liveSelected} name={metric.name} />
-          {metric.name}
+          {metric.name} ({metric.historicalValues[metric.historicalValues.length-1] ? metric.historicalValues[metric.historicalValues.length-1].value : -1} {metric.unit} )
         </ListItem>
       ))}
     </List>
