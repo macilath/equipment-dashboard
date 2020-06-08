@@ -3,5 +3,5 @@ import { reducer as metricReducer } from '../Features/Metrics/reducer';
 
 export default {
   weather: weatherReducer,
-  metric: metricReducer
+  metric: metricReducer,
 };
